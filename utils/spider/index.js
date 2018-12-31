@@ -1,9 +1,15 @@
-let request = require('request');
-let syncRequest = require('sync-request');
-let fs = require('fs-sync');
+const request = require('request');
+const syncRequest = require('sync-request');
+const fs = require('fs-sync');
+const config = require('./config.js');
+const mysql = require('mysql');
+const util = require('util');
+
+let mysqlConn = mysql.createConnection({ host: config.mysqlServer, user: config.mysqlUser, password: config.mysqlPassword, database: config.mysqlDatabase, timezone: 'pst', charset: 'utf8mb4' });
+const mysqlQuery = util.promisify(mysqlConn.query).bind(mysqlConn);
 
 function getSqlData(data) {
-    return data.replace("'", "''").replace('&nbsp;', '');
+    return data.trim().replace("'", "''").replace('&nbsp;', '');
 }
 
 function getCacheFile(url) {
@@ -80,8 +86,28 @@ function getHttpAsync(url, func) {
     });
 }
 
+async function insertDatabase(church, date, speaker, title, audio, video) {
+    date = getSqlData(date);
+    speaker = getSqlData(speaker);
+    title = getSqlData(title);
+    audio = getSqlData(audio);
+    video = getSqlData(video);
+
+    try {
+        result = await mysqlQuery('SELECT * FROM sermons WHERE church=? AND date=? AND speaker=? LIMIT 1', [church, date, speaker]);
+        if (result.length === 0) {
+            console.log(`INSERT INTO sermons(church, date, speaker, title, audio, video) VALUES('${church}', '${date}', '${speaker}', '${title}', '${audio}', '${video}');`);
+            result = await mysqlQuery('INSERT INTO sermons(church, date, speaker, title, audio, video) VALUES(?, ?, ?, ?, ?, ?)', [church, date, speaker, title, audio, video]);
+        }
+    } catch (error) {
+        console.log(error);
+    }
+}
+
 // 真光基督教会
-function parseTrueLight() {
+async function parseTrueLight(churchId) {
+    console.log('Parsing TrueLight start');
+
     const content = getHttp('http://www.seattletruelight.org/index.php/Media_sermons', true);
     let body = getString(content, '<!-- bodytext -->', '<!-- /bodytext -->');
 
@@ -124,14 +150,18 @@ function parseTrueLight() {
             speaker = speakerValue.value;
         }
 
-        const title = result.value.substr(speakerValue.position + 1);
+        let title = result.value.substr(speakerValue.position + 1);
 
-        console.log(`REPLACE INTO sermons(church, date, speaker, title, audio) VALUES('1', '${getSqlData(date)}', '${getSqlData(speaker)}', '${getSqlData(title)}', '${getSqlData(link)}');`);
+        await insertDatabase(churchId, date, speaker, title, link, '');
     }
+
+    console.log('Parsing TrueLight done!');
 }
 
 // Bread of Life Christian Church in Seattle 西雅圖靈糧堂
-function parseSeaBOL() {
+async function parseSeaBOL(churchId) {
+    console.log('Parsing SeaBOL start');
+
     const content = getHttp('https://www.youtube.com/channel/UC3pFaSxaAYKUtecq_dxd6SA/videos', true);
 
     const sermons = content.split('"yt-lockup-content"');
@@ -177,12 +207,16 @@ function parseSeaBOL() {
         const speaker = title.value.substr(pos + 1).trim();
         title = title.value.substr(0, pos - 1).trim();
 
-        console.log(`REPLACE INTO sermons(church, date, speaker, title, video) VALUES('2', '${getSqlData(date)}', '${getSqlData(speaker)}', '${getSqlData(title)}', '${getSqlData(video)}');`);
+        await insertDatabase(churchId, date, speaker, title, '', '');
     }
+
+    console.log('Parsing SeaBOL done!');
 }
 
 // 東區基督教會
-function parseEccc() {
+async function parseEccc(churchId) {
+    console.log('Parsing Eccc start');
+
     const content = getHttp('http://eccc.net/Cn/Worship/Worship_2018_tr.htm', true);
 
     const sermons = content.split('<tr');
@@ -225,11 +259,21 @@ function parseEccc() {
             audio = 'http://eccc.net' + audioValue.value;
         }
 
-        console.log(`REPLACE INTO sermons(church, date, speaker, title, video, audio) VALUES('3', '${getSqlData(date)}', '${getSqlData(speaker)}', '${getSqlData(title)}', '${getSqlData(video)}', '${getSqlData(audio)}');`);
+        await insertDatabase(churchId, date, speaker, title, audio, video);
     }
+
+    console.log('Parsing Eccc done!');
+}
+
+async function Main() {
+    console.log('Start');
+    mysqlConn.connect();
+    await parseTrueLight(1);
+    await parseSeaBOL(2);
+    await parseEccc(3);
+    mysqlConn.destroy();
+    console.log('Finished');
 }
 
 // Main
-parseTrueLight();
-parseSeaBOL();
-parseEccc();
+Main();

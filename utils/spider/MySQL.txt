@@ -1,0 +1,96 @@
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+SET AUTOCOMMIT = 0;
+START TRANSACTION;
+
+--
+-- Database: `engage`
+--
+CREATE DATABASE IF NOT EXISTS `engage` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE `engage`;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `church`
+--
+
+DROP TABLE IF EXISTS `church`;
+CREATE TABLE `church` (
+  `id` int(11) NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Stand-in structure for view `sermonlist`
+-- (See below for the actual view)
+--
+DROP VIEW IF EXISTS `sermonlist`;
+CREATE TABLE `sermonlist` (
+`id` int(11)
+,`date` date
+,`name` varchar(255)
+,`speaker` varchar(64)
+,`title` varchar(255)
+,`audio` varchar(255)
+,`video` varchar(255)
+);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `sermons`
+--
+
+DROP TABLE IF EXISTS `sermons`;
+CREATE TABLE `sermons` (
+  `id` int(11) NOT NULL,
+  `church` int(11) NOT NULL,
+  `date` date NOT NULL,
+  `speaker` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `video` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
+  `audio` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Structure for view `sermonlist`
+--
+DROP TABLE IF EXISTS `sermonlist`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `sermonlist`  AS  select `sermons`.`id` AS `id`,`sermons`.`date` AS `date`,`church`.`name` AS `name`,`sermons`.`speaker` AS `speaker`,`sermons`.`title` AS `title`,`sermons`.`audio` AS `audio`,`sermons`.`video` AS `video` from (`sermons` join `church` on((`church`.`id` = `sermons`.`church`))) order by `sermons`.`date` desc,`sermons`.`church` ;
+
+--
+-- Indexes for dumped tables
+--
+
+--
+-- Indexes for table `church`
+--
+ALTER TABLE `church`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `sermons`
+--
+ALTER TABLE `sermons`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `church` (`church`,`date`,`speaker`);
+
+--
+-- AUTO_INCREMENT for dumped tables
+--
+
+--
+-- AUTO_INCREMENT for table `church`
+--
+ALTER TABLE `church`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT for table `sermons`
+--
+ALTER TABLE `sermons`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=649;
+COMMIT;
