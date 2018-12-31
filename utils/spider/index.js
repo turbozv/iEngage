@@ -9,7 +9,7 @@ let mysqlConn = mysql.createConnection({ host: config.mysqlServer, user: config.
 const mysqlQuery = util.promisify(mysqlConn.query).bind(mysqlConn);
 
 function getSqlData(data) {
-    return data.trim().replace("'", "''").replace('&nbsp;', '');
+    return data.trim().replace('&nbsp;', '');
 }
 
 function getCacheFile(url) {
