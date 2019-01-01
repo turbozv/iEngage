@@ -127,12 +127,12 @@ async function parseTrueLight(churchId) {
         // get mp3 file link
         result = getString(row, '<a href="/index.php', null);
         const fileLink = getString(result.value, ':', '"');
-        let link = '';
+        let audio = '';
         if (fileLink) {
             const fileLinkBody = getHttp('http://www.seattletruelight.org/index.php/File:' + fileLink.value);
             const fileLinkValue = getString(fileLinkBody, '<a href="/images', '"');
             if (fileLinkValue) {
-                link = `http://www.seattletruelight.org/images${fileLinkValue.value}`;
+                audio = `http://www.seattletruelight.org/images${fileLinkValue.value}`;
             }
         }
 
@@ -152,7 +152,7 @@ async function parseTrueLight(churchId) {
 
         let title = result.value.substr(speakerValue.position + 1);
 
-        await insertDatabase(churchId, date, speaker, title, link, '');
+        await insertDatabase(churchId, date, speaker, title, audio, '');
     }
 
     console.log('Parsing TrueLight done!');
@@ -207,7 +207,7 @@ async function parseSeaBOL(churchId) {
         const speaker = title.value.substr(pos + 1).trim();
         title = title.value.substr(0, pos - 1).trim();
 
-        await insertDatabase(churchId, date, speaker, title, '', '');
+        await insertDatabase(churchId, date, speaker, title, '', video);
     }
 
     console.log('Parsing SeaBOL done!');
