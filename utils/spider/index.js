@@ -217,7 +217,7 @@ async function parseSeaBOL(churchId) {
 async function parseEccc(churchId) {
     console.log('Parsing Eccc start');
 
-    const content = getHttp('http://eccc.net/Cn/Worship/Worship_2018_tr.htm', true);
+    const content = getHttp(`http://eccc.net/Cn/Worship/Worship_${new Date().getFullYear()}_tr.htm`, true);
 
     const sermons = content.split('<tr');
     for (let line in sermons) {
